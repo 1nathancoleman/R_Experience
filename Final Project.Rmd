@@ -1,0 +1,143 @@
+---
+title: "Final Project"
+author: "Nathan Coleman"
+date: "October 16, 2018"
+output: word_document
+---
+
+Import the data
+
+```{r}
+setwd("C:\\Users\\Nathan\\Documents\\2018 Fall\\Stat 123\\Final Project")
+domA <- read.csv("Domains FormA.csv", stringsAsFactors = FALSE)
+domB <- read.csv("Domains FormB.Csv", stringsAsFactors = FALSE)
+formA <- read.csv("FormA.csv", stringsAsFactors = FALSE, header = FALSE)
+formB <- read.csv("FormB.csv", stringsAsFactors = FALSE, header = FALSE)
+```
+
+Sepearte the key into a different dataframe
+
+```{r}
+key <- data.frame(formA[1 , ])
+key[2 , ] <- formB[1 , ]
+formA <- formA[-1 ,]
+formB <- formB[-1 , ]
+
+```
+
+Section A: Student Portion
+
+```{r}
+master_form <- rbind(formA, formB)
+master_form$V1 <- as.integer(master_form$V1)
+master_form <- master_form[order(master_form$V1),]
+
+score <- c()
+correct_student <- NA
+correct_student_answers <- matrix(nrow = 99, ncol = 151)
+for(i in 1:99){
+  if(i%%2 == 1){
+    correct_student <- master_form[i, ] == key[1, ]
+    score[i] <- sum(correct_student)
+    correct_student_answers[i ,] <- correct_student}
+  else {
+    correct_student<- master_form[i, ] == key[2, ]
+    score[i] <- sum(correct_student)
+    correct_student_answers[i ,] <- correct_student
+  }
+}
+
+```
+
+Compile DataFrame with student ID, Score (% of total), form number
+
+```{r}
+library(formattable)
+student_final <- data.frame(1:99, percent(score/ 150, 1) , score)
+student_final$Form[student_final$X1.99%%2 == 1] <- "A"
+student_final$Form[student_final$X1.99%%2 == 0] <- "B"
+colnames(student_final) <- c("ID", "Score", "num_score", "Form")
+
+```
+
+Link to the Domains
+
+```{r}
+domain <- cbind(1:151, domA$Domain.., domB$Domain..)
+colnames(domain) <- c("questionID", "formA", "formB")
+domain[,2] <- as.integer(domain[,2])
+domain[,3] <- as.integer(domain[,3])
+current_domain <- 0
+domain_students<- matrix(nrow = 99, ncol = 5)
+domain_students[,] <- 0
+colnames(domain_students) <- c("D1", "D2", "D3", "D4", "D5")
+k <- 0
+for(i in 1:99){
+  for(j in 1:151)
+  {
+    if(correct_student_answers[i,j]==TRUE){
+      if(i %% 2 == 1){
+        current_domain <- domain[j,2]
+        k <- as.integer(domain_students[i, current_domain])
+        domain_students[i, current_domain] <- k + 1 
+      }
+      else{
+        current_domain <- domain[j,3]
+        k <- as.integer(domain_students[i, current_domain])
+        domain_students[i, current_domain] <- k + 1 
+      }
+    }
+  }
+}
+student_final <- cbind(student_final, domain_students)
+student_final$D1_per <- percent((student_final$D1 / 30), 1) 
+student_final$D2_per <- percent((student_final$D2 / 35) , 1)
+student_final$D3_per <- percent((student_final$D3 / 30) , 1)
+student_final$D4_per <- percent((student_final$D4 / 30) , 1)
+student_final$D5_per <- percent((student_final$D5 / 25) , 1)
+```
+
+
+
+Sort the Student Names Properly 
+
+```{r}
+library(knitr)
+student_final <- student_final[, c(1,4,3,2,5,10, 6,11,7,12,8,13,9,14)]
+student_final_1 <- student_final[order(-student_final$Score), ]
+kable(student_final, row.names = FALSE)
+kable(student_final_1, row.names = FALSE)
+boxplot(student_final_1$D1_per, student_final_1$D2_per, student_final_1$D3_per,  student_final_1$D4_per, student_final_1$D5_per, main = "Domain Results", xlab = "Domain Number", ylab = "Percent Correct") 
+
+```        
+
+
+Section B: Question Section
+
+```{r}
+correct_quesion<- NA
+scoreA<- 0
+for (i in 1:150){
+  correct_question<- formA[,i+1] == key[1 ,i+1]
+  scoreA[i]<- sum(correct_question)
+}
+
+scoreB<- 0
+for (i in 1:150){
+  correct_question<- formB[,i+1] == key[2 ,i+1]
+  scoreB[i]<- sum(correct_question)
+}
+total_questions<- data.frame(percent((scoreA /50), 1), "A", 1:150)
+colnames(total_questions) <- c("score", "form", "question")
+df_scoreB <- data.frame(percent((scoreB /50),1), "B", 1:150 )
+colnames(df_scoreB) <- c("score", "form", "question")
+total_questions <- rbind(total_questions, df_scoreB)
+total_questions <- total_questions[order(total_questions$form, total_questions$question, total_questions$score),]
+total_questions <- total_questions[, c(2, 3 , 1)]
+total_questions_difficult <- total_questions[order(-total_questions$score, total_questions$form,total_questions$question),]
+total_questions_difficult <- total_questions_difficult[, c(1, 2, 3)]
+kable(total_questions, row.names = FALSE)
+kable(total_questions_difficult, row.names = FALSE)
+```
+
+
